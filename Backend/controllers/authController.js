@@ -4,20 +4,20 @@ const { AdmintokenGenerator } = require("../utils/token");
 
 const authController = {};
 
-authController.createAccount = async(req, res) => {
-    try {
-        const { username, password } = req.body
+authController.createAccount = async (req, res) => {
+  try {
+    const { username, password } = req.body
 
-        const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash(password, salt);
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
 
-        await authModel.create({ username, password: hash});
+    await authModel.create({ username, password: hash });
 
-        return res.status(200).json({ message: "Account created successfully" });
-    } catch (error) {
-        console.error("Error creating user:", error);
-        return res.status(500).json({ message: "Server Error" });
-    }
+    return res.status(200).json({ message: "Account created successfully" });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return res.status(500).json({ message: "Server Error" });
+  }
 }
 
 authController.login = async (req, res) => {
@@ -30,15 +30,16 @@ authController.login = async (req, res) => {
     }
     const token = AdmintokenGenerator(admin)
     res.cookie("token", token, {
-      httpOnly: true,      
-      secure: false,    
-      sameSite: "lax",     
-      maxAge: 1 * 60 * 60 * 1000, 
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 1 * 60 * 60 * 1000,
     })
 
     res.status(200).json({
       message: "Login successful",
       admin: { id: admin._id, username: admin.username },
+      token: token
     })
   } catch (error) {
     console.error('Error logging in:', error);
@@ -46,11 +47,13 @@ authController.login = async (req, res) => {
   }
 }
 
-authController.update = async(req, res) => {
-    try {
+authController.update = async (req, res) => {
+  try {
     const { _id } = req.params;
-    const { username, password} = req.body;
-    await authModel.findByIdAndUpdate(_id, { username, password });
+    const { username, password } = req.body;
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+    await authModel.findByIdAndUpdate(_id, { username, password: hash }, { new: true });
     res.status(200).json({ message: "Updated successfully" });
   } catch (error) {
     console.error('Error updating account:', error);
