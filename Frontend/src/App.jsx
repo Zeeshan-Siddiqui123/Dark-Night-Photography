@@ -5,6 +5,8 @@ import Portfolio from "./pages/Portfolio";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Home from "./pages/Index";
+import PortfolioDetails from "./pages/PortfolioDetails";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/portfolio/:id" element={<PortfolioDetails />} />
+            <Route path="/dnp/admin" element={<AdminPanel />} />
           </Routes>
         </main>
         <Footer />
