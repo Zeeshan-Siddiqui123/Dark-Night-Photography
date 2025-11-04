@@ -6,6 +6,8 @@ const path = require('path');
 const cookieParser = require("cookie-parser");
 const indexRoute = require('./routes/indexRoute.js')
 
+
+const PORT = process.env.PORT
 const app = express();
 app.use(cookieParser())
 app.use(cors({
@@ -24,6 +26,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/", indexRoute);
 
-app.listen(5000, () => {
+app.listen(PORT, () => {
   console.log("Server is running on port 5000");
 });
