@@ -1,65 +1,85 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { FaArrowLeft, FaCameraRetro, FaImage } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaArrowLeft, FaCameraRetro, FaImage, FaTimes } from "react-icons/fa";
 
 const PortfolioDetails = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Temporary demo data
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeImage, setActiveImage] = useState("");
+
   useEffect(() => {
-    const demoData = [
-      {
-        _id: "1",
-        title: "Wedding Moments",
-        description:
-          "A beautiful wedding series capturing emotions, laughter, and candid joy in natural light. Every frame narrates a love story — timeless and elegant.",
-        mainImage:
-          "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-        gallery: [
-          "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80",
-        ],
-      },
-      {
-        _id: "2",
-        title: "Urban Portraits",
-        description:
-          "Exploring city life through creative portraits — blending style, attitude, and cinematic backdrops to create visual poetry in the urban jungle.",
-        mainImage:
-          "https://images.unsplash.com/photo-1504208434309-cb69f4fe52b0?auto=format&fit=crop&w=800&q=80",
-        gallery: [
-          "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=800&q=80",
-        ],
-      },
-      {
-        _id: "3",
-        title: "Nature Aesthetics",
-        description:
-          "Nature photography that captures emotion through the lens — from serene lakes to golden forests, every shot reflects pure tranquility.",
-        mainImage:
-          "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-        gallery: [
-          "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80",
-        ],
-      },
-    ];
+    const fetchProject = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/portfolio/captures/${id}`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch project details");
 
-    const found = demoData.find((item) => item._id === id);
-    setProject(found || demoData[0]); // fallback
+        const data = await res.json();
+        if (data.success) setProject(data.data);
+        else throw new Error(data.message || "Unknown error");
+      } catch (err) {
+        console.error(err);
+        setError("Unable to load project details. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProject();
   }, [id]);
 
-  if (!project) {
+  useEffect(() => {
+    if (project?.title) {
+      document.title = `${project.title} | Dark Night Photography`;
+    }
+  }, [project]);
+
+  if (loading)
     return (
-      <div className="text-center text-gray-400 py-20">Loading project...</div>
+      <div className="flex justify-center items-center h-screen bg-black text-gray-400 text-lg">
+        Loading project...
+      </div>
     );
-  }
+
+  if (error)
+    return (
+      <div className="flex flex-col justify-center items-center h-screen bg-black text-gray-300">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Link
+          to="/portfolio"
+          className="text-blue-400 hover:underline hover:text-blue-300"
+        >
+          ← Back to Portfolio
+        </Link>
+      </div>
+    );
+
+  if (!project)
+    return (
+      <div className="flex justify-center items-center h-screen bg-black text-gray-400">
+        Project not found.
+      </div>
+    );
+
+  const mainImage = project.images?.[0];
+  const galleryImages = project.images?.slice(1) || [];
+
+  // ✅ Open modal function
+  const openModal = (img) => {
+    setActiveImage(img);
+    setModalOpen(true);
+  };
+
+  // ✅ Close modal function
+  const closeModal = () => {
+    setActiveImage("");
+    setModalOpen(false);
+  };
 
   return (
     <div className="bg-black text-white min-h-screen py-20 px-6 md:px-16">
@@ -93,48 +113,56 @@ const PortfolioDetails = () => {
       </motion.p>
 
       {/* Main Image */}
-      <motion.div
-        className="rounded-2xl overflow-hidden shadow-lg mb-12"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        <img
-          src={project.mainImage}
-          alt={project.title}
-          className="w-full h-[70vh] object-cover"
-        />
-      </motion.div>
+      {mainImage && (
+        <motion.div
+          className="rounded-2xl overflow-hidden shadow-lg mb-12 cursor-pointer"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          onClick={() => openModal(mainImage)} // ✅ Click to open modal
+        >
+          <img
+            src={mainImage}
+            alt={project.title}
+            className="w-full h-[40vh] md:h-full object-cover"
+          />
+        </motion.div>
+      )}
 
       {/* Gallery */}
-      <motion.h2
-        className="text-3xl font-semibold mb-6 flex items-center gap-3"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <FaImage className="text-blue-400" />
-        Gallery
-      </motion.h2>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        {project.gallery.map((img, index) => (
-          <motion.div
-            key={index}
-            className="rounded-xl overflow-hidden shadow-md group"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.2 }}
+      {galleryImages.length > 0 && (
+        <>
+          <motion.h2
+            className="text-3xl font-semibold mb-6 flex items-center gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
-            <img
-              src={img}
-              alt="Gallery"
-              className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
-            />
-          </motion.div>
-        ))}
-      </div>
+            <FaImage className="text-blue-400" />
+            Gallery
+          </motion.h2>
 
-      {/* Quote or Signature */}
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {galleryImages.map((img, index) => (
+              <motion.div
+                key={index}
+                className="rounded-xl overflow-hidden shadow-md group cursor-pointer"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 + index * 0.1, duration: 0.7 }}
+                onClick={() => openModal(img)} // ✅ Click to open modal
+              >
+                <img
+                  src={img}
+                  alt={`Gallery ${index + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Quote */}
       <motion.div
         className="mt-16 text-center"
         initial={{ opacity: 0, y: 20 }}
@@ -143,8 +171,37 @@ const PortfolioDetails = () => {
         <p className="italic text-gray-400 text-lg">
           “Through our lens, every shadow has a story.”
         </p>
-        <p className="text-blue-400 font-semibold mt-3">— Dark Night Photography</p>
+        <p className="text-blue-400 font-semibold mt-3">
+          — Dark Night Photography
+        </p>
       </motion.div>
+
+      {/* ✅ Modal */}
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeModal} // click outside to close
+          >
+            <motion.img
+              src={activeImage}
+              alt="Modal"
+              className="max-h-[90vh] max-w-[90vw] rounded-xl shadow-xl"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              onClick={(e) => e.stopPropagation()} // prevent closing on image click
+            />
+            <FaTimes
+              className="absolute top-5 right-5 text-white text-3xl cursor-pointer"
+              onClick={closeModal}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
