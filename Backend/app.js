@@ -12,7 +12,7 @@ const app = express();
 app.use(cookieParser())
 app.use(cors({
   origin:
-   [process.env.FRONTEND_URL, process.env.LOCALHOST_URL]
+   [process.env.DNP_URL, process.env.LOCALHOST_URL]
    ,
   credentials: true,
 }));
